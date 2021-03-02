@@ -6,9 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 type Args struct {
@@ -54,7 +56,29 @@ func init() {
 		}
 	}
 
+	saveReqHistory()
 	fmt.Printf("================== REQUEST ==================\n%#v\n\n", args)
+}
+
+const historyDir = "history"
+const inputConfFileFormat = "req_*_%s.json"
+
+func saveReqHistory() {
+	b, err := json.MarshalIndent(args, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+
+	_ = os.Mkdir("history", os.ModePerm)
+
+	tmpFilePattern := fmt.Sprintf(inputConfFileFormat, time.Now().Format("2006-01-02_150405"))
+	f, err := ioutil.TempFile(historyDir, tmpFilePattern)
+	if err != nil {
+		log.Fatalf("failed to create tempfile. err:%s\n", err)
+	}
+	defer f.Close()
+
+	fmt.Fprintln(f, string(b))
 }
 
 func main() {
